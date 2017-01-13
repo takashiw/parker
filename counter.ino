@@ -1,39 +1,40 @@
-int buttonUp = D5;
-int buttonDown = D6;
-int led1 = D7;
-int tempChange = 0;
-
-int buttonUpState;
-int buttonDownState;
+int blowerIn = A0;
+int bendData;
 char publishString[40];
-int DELAY = 375;
-int defaultTemp = 75;
+int DELAY = 1000;
+int threshold = 40;
+int onCountMax = 10;
+int onCount = 0;
+int offCount = 0;
+int offCountMax = 3;
 
 
 void setup() {
-
-  pinMode(buttonUp, INPUT);
-  pinMode(led1, OUTPUT);
+  pinMode(blowerIn, INPUT);
+  pinMode(D7, OUTPUT);
 
 }
 
 void loop() {
-  buttonUpState = digitalRead(buttonUp);
-  buttonDownState = digitalRead(buttonDown);
-  if(buttonUpState == HIGH){
-    digitalWrite(led1, HIGH);
-    tempChange = tempChange + 1;
-    sprintf(publishString, "%d", defaultTemp + tempChange);
-    Particle.publish("Parker Temp", publishString);
-    delay(DELAY);
-  } else if(buttonDownState == HIGH){
-    digitalWrite(led1, HIGH);
-    tempChange = tempChange - 1;
-    sprintf(publishString, "%d", defaultTemp + tempChange);
-    Particle.publish("Parker Temp", publishString);
-    delay(DELAY);
+  bendData = analogRead(blowerIn);
+  sprintf(publishString, "%d", bendData);
+  /*Particle.publish("Bend Raw", publishString);*/
+  if(bendData > threshold){
+    onCount++;
   } else {
-    digitalWrite(led1, LOW);
+     offCount++;
   }
-  /*Particle.publish("WOW");*/
+  if(onCount > onCountMax){
+    offCount = 0;
+    onCount = 0;
+    Particle.publish("ParkerHeaterFan", "On");
+        Particle.publish("Fan Raw ", publishString);
+  } else if (offCount > offCountMax){
+    offCount = 0;
+    onCount = 0;
+    Particle.publish("ParkerHeaterFan", "Off");
+    Particle.publish("Fan Raw ", publishString);
+  }
+  delay(DELAY);
+
 }
